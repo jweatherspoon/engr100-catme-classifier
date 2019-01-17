@@ -1,0 +1,10 @@
+.vscode 
+__pycache__
+data
+
+training_data
+grid_search
+complaints.csv
+.DS_Store
+
+test_*
