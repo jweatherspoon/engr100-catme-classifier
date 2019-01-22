@@ -4,6 +4,17 @@ import numpy as np
 
 import preprocess
 import csv 
+from datetime import datetime 
+import os 
+
+OUTPUT_DIRECTORY = "output"
+
+def save_file(filename, comments):
+    with open(filename, 'w') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Student', 'Team', 'Section', 'Comment'])
+        for row in comments:
+            writer.writerow(row.values())
 
 if __name__ == "__main__":
     # Ask the user to supply a csv file 
@@ -17,21 +28,23 @@ if __name__ == "__main__":
     with open('models/pipeline', 'rb') as fin:
         pipeline = pickle.loads(fin.read())
 
-    # TODO: Error checking for improper data
     comments = preprocess.get_comments(comment_data)
     predictions = pipeline.predict(comments)
-    mask = (predictions + 1).astype(bool)
+
+    complaints_mask = (predictions + 1).astype(bool)
+    neutral_mask = (predictions - 1).astype(bool)
 
     # Rewrite the negative comments to a file 
-    negatives = comment_data[mask]
+    complaints = comment_data[complaints_mask]
+    neutral = filter(lambda x: x['comment'] != '', comment_data[neutral_mask])
 
-    save_file = easygui.filesavebox("Save file", default="complaints.csv", filetypes=["\*.csv"])
+    if not (os.path.exists(OUTPUT_DIRECTORY) and os.path.isdir(OUTPUT_DIRECTORY)):
+        os.mkdir(OUTPUT_DIRECTORY)
 
-    # TODO: Error checking for user cancel
+    file_base = datetime.now().strftime('%F')
+    output_file_base = f"{OUTPUT_DIRECTORY}/{file_base}"
+    complaints_filename = f"{output_file_base}-complaints.csv"
+    neutral_filename = f"{output_file_base}-neutral.csv"
 
-    with open(save_file, 'w') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(['Student','Team','Section','Comment'])
-        for row in negatives:
-            writer.writerow(row.values())
-    
+    save_file(complaints_filename, complaints)
+    save_file(neutral_filename, neutral)
